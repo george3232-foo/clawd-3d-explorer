@@ -601,17 +601,24 @@ function createActivities(scene, terrain, items) {
   const _v = new THREE.Vector3();
   const prevCreature = new THREE.Vector3(); let havePrev = false;
 
-  // pick dry, in-bounds ground in a radius band around origin
+  // pick dry, in-bounds ground in a radius band around origin.
+  // KEEPOUT guarantees nothing spawns near the creature's start point (origin),
+  // so no tree/boulder appears on top of Clawd when the game begins.
+  const KEEPOUT = 14;
   function groundSpot(minR, maxR) {
-    for (let i = 0; i < 24; i++) {
-      const a = Math.random() * Math.PI * 2, r = minR + Math.random() * (maxR - minR);
+    const lo = Math.max(minR, KEEPOUT);
+    for (let i = 0; i < 40; i++) {
+      const a = Math.random() * Math.PI * 2, r = lo + Math.random() * Math.max(1, maxR - lo);
       const x = Math.cos(a) * r, z = Math.sin(a) * r;
       if (Math.abs(x) > LIMIT || Math.abs(z) > LIMIT) continue;
       const gy = heightAt(x, z);
       if (gy < WATER + 0.6) continue;
+      if (x * x + z * z < KEEPOUT * KEEPOUT) continue;   // never near the creature start
       return { x, z, gy };
     }
-    return { x: 0, z: 0, gy: heightAt(0, 0) };
+    // safe fallback: a fixed dry spot well away from origin (never on the creature)
+    const fx = KEEPOUT + 6, fz = KEEPOUT + 6;
+    return { x: fx, z: fz, gy: heightAt(fx, fz) };
   }
 
   // ---------- A. Pushable boulder ----------
